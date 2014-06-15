@@ -147,6 +147,7 @@ namespace zmq {
       void *socket_;
       int32_t pending_;
       uint8_t state_;
+      uint8_t stateAt_;
       int32_t endpoints;
 #if ZMQ_CAN_MONITOR
       void *monitor_socket_;
@@ -430,6 +431,7 @@ namespace zmq {
     socket_ = zmq_socket(context->context_, type);
     pending_ = 0;
     state_ = STATE_READY;
+    stateAt_ = 0;
 
     endpoints = 0;
 
@@ -461,8 +463,11 @@ namespace zmq {
       Socket* socket = GetSocket(args);                         \
       if (socket->state_ == STATE_CLOSED)                       \
           return NanThrowTypeError("Socket is closed");         \
-      if (socket->state_ == STATE_BUSY)                         \
-          return NanThrowTypeError("Socket is busy");
+      if (socket->state_ == STATE_BUSY) {                       \
+          char tbuff[2048];                                     \
+          sprintf(tbuff,"Socket is busy %i",socket->stateAt_);  \
+          return NanThrowTypeError(tbuff);                      \
+      }                                                         \
 
   NAN_GETTER(Socket::GetState) {
     NanScope();
@@ -623,7 +628,7 @@ namespace zmq {
                   UV_BindAsync,
                   (uv_after_work_cb)UV_BindAsyncAfter);
     socket->state_ = STATE_BUSY;
-
+    socket->stateAt_ = 1;
     NanReturnUndefined();
   }
 
@@ -667,6 +672,7 @@ namespace zmq {
     String::Utf8Value addr(args[0].As<String>());
     GET_SOCKET(args);
     socket->state_ = STATE_BUSY;
+    socket->stateAt_ = 2;
     if (zmq_bind(socket->socket_, *addr) < 0)
       return NanThrowError(ErrorMessage());
 
@@ -700,6 +706,7 @@ namespace zmq {
                   UV_UnbindAsync,
                   (uv_after_work_cb)UV_UnbindAsyncAfter);
     socket->state_ = STATE_BUSY;
+    socket->stateAt_ = 3;
     NanReturnUndefined();
   }
 
@@ -742,6 +749,7 @@ namespace zmq {
     String::Utf8Value addr(args[0].As<String>());
     GET_SOCKET(args);
     socket->state_ = STATE_BUSY;
+    socket->stateAt_ = 4;
     if (zmq_unbind(socket->socket_, *addr) < 0)
       return NanThrowError(ErrorMessage());
 
