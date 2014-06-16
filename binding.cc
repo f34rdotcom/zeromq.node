@@ -156,6 +156,7 @@ namespace zmq {
       static NAN_METHOD(Unmonitor);
 #endif
 
+      static NAN_METHOD(isAsyncBusy);
       bool IsReady();
       uv_poll_t *poll_handle_;
       static void UV_PollCallback(uv_poll_t* handle, int status, int events);
@@ -287,6 +288,7 @@ namespace zmq {
 
     target->Set(NanNew("SocketBinding"), t->GetFunction());
 
+    NODE_SET_PROTOTYPE_METHOD(t, "isasyncbusy", isAsyncBusy);
     NanAssignPersistent(callback_symbol, NanNew("onReady"));
   }
 
@@ -313,6 +315,12 @@ namespace zmq {
     Socket *socket = new Socket(context, type);
     socket->Wrap(args.This());
     NanReturnValue(args.This());
+  }
+
+  NAN_METHOD(Socket::isAsyncBusy) {
+    NanScope();
+    Socket* socket = GetSocket(args);
+    NanReturnValue(NanNew<Boolean>(socket->state_ != STATE_READY));
   }
 
   bool
