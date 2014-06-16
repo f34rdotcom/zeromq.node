@@ -709,12 +709,12 @@ namespace zmq {
     BindState* state = new BindState(socket, cb, addr);
     uv_work_t* req = new uv_work_t;
     req->data = state;
+    socket->state_ = STATE_BUSY;
+    socket->stateAt_ = 3;
     uv_queue_work(uv_default_loop(),
                   req,
                   UV_UnbindAsync,
                   (uv_after_work_cb)UV_UnbindAsyncAfter);
-    socket->state_ = STATE_BUSY;
-    socket->stateAt_ = 3;
     NanReturnUndefined();
   }
 
